@@ -12,7 +12,7 @@ on:
         required: true
         type: string
       uyou_url:
-        description: "The URL for download uYou (Leave default, uses internal fallback)"
+        description: "The URL for download uYou"
         default: "https://github.com/qnblackcat/uYouPlus/raw/main/Tweaks/uYou/com.miro.uyou_3.0.4_iphoneos-arm.deb"
         required: false
         type: string
@@ -49,7 +49,7 @@ concurrency:
 jobs:
   build:
     name: Build uYouPlus
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     permissions:
       contents: write
 
@@ -60,13 +60,10 @@ jobs:
           path: main
           submodules: recursive
 
-      - name: Install Dependencies on Ubuntu
+      - name: Install Dependencies on macOS
         run: |
-          sudo apt-get update
-          sudo apt-get install -y dpkg make git wget unzip python3 python3-pip curl
-          pip3 install gdown --break-system-packages
-          sudo curl -Lo /usr/local/bin/ldid https://github.com/theos/binaries/raw/master/linux/x86_64/ldid
-          sudo chmod +x /usr/local/bin/ldid
+          brew install dpkg make wget python3
+          pip3 install gdown --break-system-packages || pip3 install gdown
 
       - name: Setup Theos
         uses: actions/checkout@v4.2.1
@@ -135,7 +132,7 @@ jobs:
           unzip -q YouTube.zip
           youtube_version=$(python3 -c "import plistlib; p = plistlib.load(open('Payload/YouTube.app/Info.plist', 'rb')); print(p.get('CFBundleVersion'))")
           echo "==> YouTube v$youtube_version downloaded!"
-          sed -i "17s#.*#YOUTUBE_VERSION = ${youtube_version}#g" Makefile
+          sed -i '' "17s#.*#YOUTUBE_VERSION = ${youtube_version}#g" Makefile || sed -i "17s#.*#YOUTUBE_VERSION = ${youtube_version}#g" Makefile
           echo "youtube_version=${youtube_version}" >> $GITHUB_OUTPUT
         env:
           THEOS: ${{ github.workspace }}/theos
@@ -147,8 +144,7 @@ jobs:
           mkdir -p theos/lib/iphone/rootless
           cd ${{ github.workspace }}/main
           
-          echo "Obteniendo paquete de uYou (con sistema de respaldo local)..."
-          # Intentar descargar con wget de forma segura; si falla, clonar el repo de respaldo para extraer el deb localmente
+          echo "Obteniendo paquete de uYou..."
           wget -L -O uyou.deb "${{ inputs.uyou_url }}" || {
             echo "URL principal falló. Obteniendo desde repositorio de respaldo..."
             git clone --depth=1 https://github.com/qnblackcat/uYouPlus.git temp_uyou_repo
@@ -156,18 +152,17 @@ jobs:
             rm -rf temp_uyou_repo
           }
           
-          # Asegurar la extracción correcta para que Theos y Makefile no ejecuten descargas fallidas
           mkdir -p Tweaks/uYou
           dpkg-deb -x uyou.deb Tweaks/uYou/ 2>/dev/null || true
           dpkg-deb -e uyou.deb Tweaks/uYou/DEBIAN 2>/dev/null || true
           
-          sed -i "27s#.*#BUNDLE_ID = ${{ env.BUNDLE_ID }}#g" Makefile
-          sed -i "26s#.*#DISPLAY_NAME = ${{ env.APP_NAME }}#g" Makefile
+          sed -i '' "27s#.*#BUNDLE_ID = ${{ env.BUNDLE_ID }}#g" Makefile || sed -i "27s#.*#BUNDLE_ID = ${{ env.BUNDLE_ID }}#g" Makefile
+          sed -i '' "26s#.*#DISPLAY_NAME = ${{ env.APP_NAME }}#g" Makefile || sed -i "26s#.*#DISPLAY_NAME = ${{ env.APP_NAME }}#g" Makefile
           
           make package THEOS_PACKAGE_SCHEME=rootless IPA=Payload/YouTube.app FINALPACKAGE=1
           echo "package=$(ls -t packages | head -n1)" >>$GITHUB_OUTPUT
-          echo -e "==> \033[1mSHASUM256: $(shasum -a 256 packages/*.ipa | cut -f1 -d' ')\033[0m"
-          echo -e "==> \033[1mBundle ID: ${{ env.BUNDLE_ID }}\033[0m"
+          echo "==> SHASUM256: $(shasum -a 256 packages/*.ipa | cut -f1 -d' ')"
+          echo "==> Bundle ID: ${{ env.BUNDLE_ID }}"
         env:
           THEOS: ${{ github.workspace }}/theos
           UYOU_VERSION: ${{ inputs.uyou_version }}
