@@ -113,7 +113,21 @@ jobs:
         id: prepare_youtube
         run: |
           echo "Descargando IPA desde Google Drive..."
-          python3 -c "import gdown, os; url = os.environ['YOUTUBE_URL']; gdown.download(url=url, output='main/YouTube.ipa', quiet=False)"
+          python3 -c '
+          import gdown, os, re
+          url = os.environ["YOUTUBE_URL"]
+          match = re.search(r"([0-9a-zA-Z_-]{25,})", url)
+          if match:
+              file_id = match.group(1)
+              if "d/" in url:
+                  parts = url.split("d/")
+                  if len(parts) > 1:
+                      file_id = parts[1].split("/")[0]
+              print(f"ID extraído: {file_id}")
+              gdown.download(id=file_id, output="main/YouTube.ipa", quiet=False, remaining_ok=True)
+          else:
+              gdown.download(url=url, output="main/YouTube.ipa", quiet=False)
+          '
 
           cd ${{ github.workspace }}/main
           mv YouTube.ipa YouTube.zip
