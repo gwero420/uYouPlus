@@ -13,7 +13,7 @@ on:
         type: string
       uyou_url:
         description: "The URL for download uYou"
-        default: "https://github.com/MiRO92/uYou-for-YouTube/releases/download/3.0.3/com.miro.uyou_3.0.4_iphoneos-arm.deb"
+        default: "https://miro92.com/repo/debs/com.miro.uyou_3.0.4_iphoneos-arm.deb"
         required: false
         type: string
       decrypted_youtube_url:
@@ -147,7 +147,7 @@ jobs:
           mkdir -p theos/lib/iphone/rootless
           cd ${{ github.workspace }}/main
           
-          # Descargar manualmente el .deb de uYou para asegurar que el Makefile lo encuentre
+          # Descargar manualmente el .deb de uYou desde el repositorio oficial
           echo "Descargando paquete de uYou..."
           wget -O uyou.deb "${{ inputs.uyou_url }}"
           
@@ -185,6 +185,6 @@ jobs:
           DRAFT: ${{ inputs.create_release }}
         with:
           tag_name: v${{ env.YOUTUBE_VERSION }}-${{ env.UYOU_VERSION }}-(${{ github.run_number }})
-          name: v${{ env.YOUTUBE_VERSION }}-${{ env.UYOU_VERSION }}-(${{ github.run_number }})
+          name: v${{ env.YONTUBE_VERSION }}-${{ env.UYOU_VERSION }}-(${{ github.run_number }})
           files: main/packages/*.ipa
           draft: ${{ env.DRAFT }}
