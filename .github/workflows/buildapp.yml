@@ -62,7 +62,7 @@ jobs:
 
       - name: Install Dependencies on macOS
         run: |
-          brew install dpkg make wget python3
+          brew install dpkg make wget python3 ldid
           pip3 install gdown --break-system-packages || pip3 install gdown
 
       - name: Setup Theos
