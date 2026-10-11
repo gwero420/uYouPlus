@@ -13,7 +13,7 @@ on:
         type: string
       uyou_url:
         description: "The URL for download uYou"
-        default: "https://miro92.com/repo/debs/com.miro.uyou_3.0.4_iphoneos-arm.deb"
+        default: "https://raw.githubusercontent.com/arichornlover/YouTubeTweak-Downloads/main/uYou/com.miro.uyou_3.0.4_iphoneos-arm.deb"
         required: false
         type: string
       decrypted_youtube_url:
@@ -147,12 +147,17 @@ jobs:
           mkdir -p theos/lib/iphone/rootless
           cd ${{ github.workspace }}/main
           
-          # Descargar manualmente el .deb de uYou desde el repositorio oficial
           echo "Descargando paquete de uYou..."
-          wget -O uyou.deb "${{ inputs.uyou_url }}"
+          # Intentar descargar desde el enlace proporcionado o usar un espejo público confiable
+          wget -O uyou.deb "${{ inputs.uyou_url }}" || wget -O uyou.deb "https://raw.githubusercontent.com/arichornlover/YouTubeTweak-Downloads/main/uYou/com.miro.uyou_3.0.4_iphoneos-arm.deb"
+          
+          # Copiar el paquete al directorio esperado si el Makefile lo requiere localmente
+          mkdir -p Tweaks/uYou
+          cp uyou.deb Tweaks/uYou/com.miro.uyou_3.0.4_iphoneos-arm.deb 2>/dev/null || true
           
           sed -i "27s#.*#BUNDLE_ID = ${{ env.BUNDLE_ID }}#g" Makefile
           sed -i "26s#.*#DISPLAY_NAME = ${{ env.APP_NAME }}#g" Makefile
+          
           make package THEOS_PACKAGE_SCHEME=rootless IPA=Payload/YouTube.app FINALPACKAGE=1
           echo "package=$(ls -t packages | head -n1)" >>$GITHUB_OUTPUT
           echo -e "==> \033[1mSHASUM256: $(shasum -a 256 packages/*.ipa | cut -f1 -d' ')\033[0m"
@@ -185,6 +190,6 @@ jobs:
           DRAFT: ${{ inputs.create_release }}
         with:
           tag_name: v${{ env.YOUTUBE_VERSION }}-${{ env.UYOU_VERSION }}-(${{ github.run_number }})
-          name: v${{ env.YONTUBE_VERSION }}-${{ env.UYOU_VERSION }}-(${{ github.run_number }})
+          name: v${{ env.YOUTUBE_VERSION }}-${{ env.UYOU_VERSION }}-(${{ github.run_number }})
           files: main/packages/*.ipa
           draft: ${{ env.DRAFT }}
