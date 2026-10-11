@@ -64,7 +64,6 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y dpkg make git wget unzip python3 curl
-          # Descargar e instalar ldid compilado directamente desde Theos
           sudo curl -Lo /usr/local/bin/ldid https://github.com/theos/binaries/raw/master/linux/x86_64/ldid
           sudo chmod +x /usr/local/bin/ldid
 
@@ -112,7 +111,18 @@ jobs:
       - name: Prepare YouTube iPA
         id: prepare_youtube
         run: |
-          wget "$YOUTUBE_URL" --no-verbose -O main/YouTube.ipa
+          if [[ "$YOUTUBE_URL" == *"drive.google.com"* ]] || [[ "$YOUTUBE_URL" == *"docs.google.com"* ]]; then
+            FILE_ID=$(echo "$YOUTUBE_URL" | sed -E 's/.*\/d\/([a-zA-Z0-9_-]+).*/\1/' | cut -d'/' -f1 | cut -d'?' -f1)
+            echo "Descargando de Google Drive con ID: $FILE_ID"
+            wget --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate \
+              "https://docs.google.com/uc?export=download&id=${FILE_ID}" -O- \
+              | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1/p' > /tmp/confirm.txt
+            
+            wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(cat /tmp/confirm.txt)&id=${FILE_ID}" -O main/YouTube.ipa
+          else
+            wget "$YOUTUBE_URL" --no-verbose -O main/YouTube.ipa
+          fi
+
           cd ${{ github.workspace }}/main
           mv YouTube.ipa YouTube.zip
           unzip -q YouTube.zip
