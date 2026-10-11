@@ -13,7 +13,7 @@ on:
         type: string
       uyou_url:
         description: "The URL for download uYou"
-        default: "https://raw.githubusercontent.com/arichornlover/YouTubeTweak-Downloads/main/uYou/com.miro.uyou_3.0.4_iphoneos-arm.deb"
+        default: "https://github.com/arichorn/uYouEnhanced/releases/download/v3.0.4-19.21.3-3.0.4/com.miro.uyou_3.0.4_iphoneos-arm.deb"
         required: false
         type: string
       decrypted_youtube_url:
@@ -148,12 +148,13 @@ jobs:
           cd ${{ github.workspace }}/main
           
           echo "Descargando paquete de uYou..."
-          # Intentar descargar desde el enlace proporcionado o usar un espejo público confiable
-          wget -O uyou.deb "${{ inputs.uyou_url }}" || wget -O uyou.deb "https://raw.githubusercontent.com/arichornlover/YouTubeTweak-Downloads/main/uYou/com.miro.uyou_3.0.4_iphoneos-arm.deb"
+          # Descargar uYou.deb usando -L para seguir redirecciones de GitHub Releases
+          wget -L -O uyou.deb "${{ inputs.uyou_url }}"
           
-          # Copiar el paquete al directorio esperado si el Makefile lo requiere localmente
+          # Extraer el .deb en la estructura que busca el Makefile para evitar que ejecute su descarga fallida
           mkdir -p Tweaks/uYou
-          cp uyou.deb Tweaks/uYou/com.miro.uyou_3.0.4_iphoneos-arm.deb 2>/dev/null || true
+          dpkg-deb -x uyou.deb Tweaks/uYou/
+          dpkg-deb -e uyou.deb Tweaks/uYou/DEBIAN
           
           sed -i "27s#.*#BUNDLE_ID = ${{ env.BUNDLE_ID }}#g" Makefile
           sed -i "26s#.*#DISPLAY_NAME = ${{ env.APP_NAME }}#g" Makefile
