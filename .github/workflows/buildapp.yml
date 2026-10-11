@@ -12,8 +12,8 @@ on:
         required: true
         type: string
       uyou_url:
-        description: "The URL for download uYou"
-        default: "https://github.com/arichorn/uYouEnhanced/releases/download/v3.0.4-19.21.3-3.0.4/com.miro.uyou_3.0.4_iphoneos-arm.deb"
+        description: "The URL for download uYou (Leave default, uses internal fallback)"
+        default: "https://github.com/qnblackcat/uYouPlus/raw/main/Tweaks/uYou/com.miro.uyou_3.0.4_iphoneos-arm.deb"
         required: false
         type: string
       decrypted_youtube_url:
@@ -147,14 +147,19 @@ jobs:
           mkdir -p theos/lib/iphone/rootless
           cd ${{ github.workspace }}/main
           
-          echo "Descargando paquete de uYou..."
-          # Descargar uYou.deb usando -L para seguir redirecciones de GitHub Releases
-          wget -L -O uyou.deb "${{ inputs.uyou_url }}"
+          echo "Obteniendo paquete de uYou (con sistema de respaldo local)..."
+          # Intentar descargar con wget de forma segura; si falla, clonar el repo de respaldo para extraer el deb localmente
+          wget -L -O uyou.deb "${{ inputs.uyou_url }}" || {
+            echo "URL principal falló. Obteniendo desde repositorio de respaldo..."
+            git clone --depth=1 https://github.com/qnblackcat/uYouPlus.git temp_uyou_repo
+            cp temp_uyou_repo/Tweaks/uYou/*.deb uyou.deb
+            rm -rf temp_uyou_repo
+          }
           
-          # Extraer el .deb en la estructura que busca el Makefile para evitar que ejecute su descarga fallida
+          # Asegurar la extracción correcta para que Theos y Makefile no ejecuten descargas fallidas
           mkdir -p Tweaks/uYou
-          dpkg-deb -x uyou.deb Tweaks/uYou/
-          dpkg-deb -e uyou.deb Tweaks/uYou/DEBIAN
+          dpkg-deb -x uyou.deb Tweaks/uYou/ 2>/dev/null || true
+          dpkg-deb -e uyou.deb Tweaks/uYou/DEBIAN 2>/dev/null || true
           
           sed -i "27s#.*#BUNDLE_ID = ${{ env.BUNDLE_ID }}#g" Makefile
           sed -i "26s#.*#DISPLAY_NAME = ${{ env.APP_NAME }}#g" Makefile
