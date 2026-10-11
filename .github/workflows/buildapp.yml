@@ -114,7 +114,7 @@ jobs:
         id: prepare_youtube
         run: |
           echo "Descargando IPA desde Google Drive..."
-          gdown "$YOUTUBE_URL" -O main/YouTube.ipa
+          gdown --fuzzy "$YOUTUBE_URL" -O main/YouTube.ipa
 
           cd ${{ github.workspace }}/main
           mv YouTube.ipa YouTube.zip
