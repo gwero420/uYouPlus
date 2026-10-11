@@ -63,7 +63,10 @@ jobs:
       - name: Install Dependencies on Ubuntu
         run: |
           sudo apt-get update
-          sudo apt-get install -y ldid dpkg make git wget unzip python3
+          sudo apt-get install -y dpkg make git wget unzip python3 curl
+          # Descargar e instalar ldid compilado directamente desde Theos
+          sudo curl -Lo /usr/local/bin/ldid https://github.com/theos/binaries/raw/master/linux/x86_64/ldid
+          sudo chmod +x /usr/local/bin/ldid
 
       - name: Setup Theos
         uses: actions/checkout@v4.2.1
@@ -113,7 +116,6 @@ jobs:
           cd ${{ github.workspace }}/main
           mv YouTube.ipa YouTube.zip
           unzip -q YouTube.zip
-          # Usamos Python para leer el archivo plist de forma compatible en Linux
           youtube_version=$(python3 -c "import plistlib; p = plistlib.load(open('Payload/YouTube.app/Info.plist', 'rb')); print(p.get('CFBundleVersion'))")
           echo "==> YouTube v$youtube_version downloaded!"
           sed -i "17s#.*#YOUTUBE_VERSION = ${youtube_version}#g" Makefile
